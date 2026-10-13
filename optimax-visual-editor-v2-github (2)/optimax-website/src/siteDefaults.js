@@ -3,7 +3,22 @@ export const initialContent = {
     eyebrow: 'TRUSTED SINCE 1995',
     title: 'See Life\nClearly.',
     body: 'Professional eye care for every stage of life.\nFrom advanced technology to experienced specialists,\nwe’re with you on your journey to a brighter tomorrow.',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=85&fit=crop'
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=85&fit=crop',
+    overlay: {
+      enabled: true, type: 'linear', angle: 90, radialX: 25, radialY: 50,
+      stops: [
+        {color:'#f8fcff',opacity:96,position:0},
+        {color:'#f8fcff',opacity:84,position:31},
+        {color:'#f8fcff',opacity:8,position:62}
+      ]
+    }
+  },
+  branding: {headerLogo:'',footerLogo:'',headerWidth:165,footerWidth:165},
+  icons: {
+    headerSearch:'Search', headerMenu:'Menu', buttonArrow:'ArrowRight', cardArrow:'ArrowRight', submitArrow:'ArrowRight',
+    features:['ScanEye','Microscope','HeartHandshake','ShieldCheck'],
+    benefits:['ScanEye','Users','HeartHandshake','Settings'],
+    social:{facebook:'Facebook',instagram:'Instagram',youtube:'Youtube'}
   },
   features: [
     { title: 'Experienced Eye Specialists', detail: 'Guiding you at every stage' },

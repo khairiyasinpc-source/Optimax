@@ -1,12 +1,17 @@
 import React, {useEffect,useMemo,useRef,useState} from 'react'
 import {ArrowDown,ArrowUp,Check,ChevronDown,ChevronRight,Copy,Download,Eye,EyeOff,ExternalLink,FileJson,GripVertical,Image as ImageIcon,Info,Layers,LayoutGrid,Lock,LockOpen,Monitor,MousePointer2,Palette,Plus,Redo2,RotateCcw,Save,Settings2,Smartphone,Tablet,Trash2,Type,Undo2,Upload,X} from 'lucide-react'
 import {initialContent,deepMerge,readPath,setPath} from './siteDefaults'
+import {iconNames,IconVisual} from './iconCatalog'
+import {gradientBackground} from './gradient'
 
 const DRAFT_KEY='optimax-studio-v2-draft'
 const OLD_KEY='optimax-studio-draft-v1'
 const MAX_HISTORY=55
-const repo='https://github.com/khairiyasinpc-source/Optimax/tree/main/optimax-website/public'
+const repo='https://github.com/khairiyasinpc-source/Optimax/tree/main/optimax-visual-editor-v2-github%20(2)/optimax-website/public'
 const getSection=path=>{
+  if(path.startsWith('branding.') || ['icons.headerSearch','icons.headerMenu','icons.buttonArrow','icons.cardArrow','icons.submitArrow'].includes(path) || path.startsWith('icons.social.'))return 'global'
+  if(path.startsWith('icons.features.'))return 'features'
+  if(path.startsWith('icons.benefits.'))return 'about'
   if(path==='buttons.headerBook'||path==='buttons.footerBook')return 'global'
   if(path.startsWith('buttons.')){const name=path.split('.')[1];return name.startsWith('treatment')?'treatments':name.startsWith('solutions')?'solutions':name.startsWith('appointment')?'appointment':name.startsWith('news')?'news':'hero'}
   if(path.startsWith('treatmentSection')||path.startsWith('treatments.'))return 'treatments'
@@ -16,10 +21,10 @@ const getSection=path=>{
 }
 function editableFields(d,section){
   const field=(label,path,kind='text')=>({label,path,kind})
-  if(section==='hero')return [field('Eyebrow','hero.eyebrow'),field('Headline','hero.title'),field('Description','hero.body'),field('Hero image','hero.image','image'),field('Primary button','buttons.heroBook','button'),field('Secondary button','buttons.heroExplore','button')]
-  if(section==='features')return d.features.flatMap((f,i)=>[field(`Point ${i+1} • Title`,`features.${i}.title`),field(`Point ${i+1} • Detail`,`features.${i}.detail`)])
+  if(section==='hero')return [field('Eyebrow','hero.eyebrow'),field('Headline','hero.title'),field('Description','hero.body'),field('Hero image','hero.image','image'),field('Hero gradient','hero.overlay','gradient'),field('Primary button','buttons.heroBook','button'),field('Secondary button','buttons.heroExplore','button')]
+  if(section==='features')return d.features.flatMap((f,i)=>[field(`Point ${i+1} • Icon`,`icons.features.${i}`,'icon'),field(`Point ${i+1} • Title`,`features.${i}.title`),field(`Point ${i+1} • Detail`,`features.${i}.detail`)])
   if(section==='treatments')return [field('Eyebrow','treatmentSection.eyebrow'),field('Heading','treatmentSection.title'),field('Description','treatmentSection.body'),field('View button','buttons.treatmentView','button'),...d.treatments.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`treatments.${i}.image`,'image'),field(`Card ${i+1} • Title`,`treatments.${i}.title`),field(`Card ${i+1} • Description`,`treatments.${i}.desc`)])]
-  if(section==='about')return [field('Eyebrow','about.eyebrow'),field('Heading','about.title'),field('Description','about.body'),field('Photo','about.image','image')]
+  if(section==='about')return [field('Eyebrow','about.eyebrow'),field('Heading','about.title'),field('Description','about.body'),field('Photo','about.image','image'),...['Advanced Technology','Experienced Specialists','Personalised Care','Comprehensive Solutions'].map((name,i)=>field(`${name} icon`,`icons.benefits.${i}`,'icon'))]
   if(section==='solutions')return [field('Heading','solutions.title'),field('View button','buttons.solutionsView','button'),...d.solutions.cards.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`solutions.cards.${i}.image`,'image'),field(`Card ${i+1} • Title`,`solutions.cards.${i}.title`),field(`Card ${i+1} • Description`,`solutions.cards.${i}.desc`)])]
   if(section==='appointment')return [field('Heading','appointment.title'),field('Description','appointment.body'),field('Background','appointment.image','image'),field('CTA button','buttons.appointmentBook','button')]
   if(section==='partners')return [field('Eyebrow','partners.eyebrow'),...d.partners.names.map((_,i)=>field(`Partner ${i+1}`,`partners.names.${i}`))]
@@ -27,7 +32,7 @@ function editableFields(d,section){
   if(section==='enquiry')return [field('Eyebrow','enquiry.eyebrow'),field('Heading','enquiry.title'),field('Description','enquiry.body')]
   return []
 }
-const controlIcon=kind=>kind==='image'?<ImageIcon size={15}/>:kind==='button'?<MousePointer2 size={15}/>:<Type size={15}/>
+const controlIcon=kind=>kind==='image'||kind==='logo'?<ImageIcon size={15}/>:kind==='icon'?<Palette size={15}/>:kind==='gradient'?<Palette size={15}/>:kind==='button'?<MousePointer2 size={15}/>:<Type size={15}/>
 function ToolButton({children,icon:Icon,onClick,disabled,title,active=false,className=''}){return <button type="button" title={title} aria-label={title||undefined} disabled={disabled} className={`studio-v2-iconbtn ${active?'v2-active':''} ${className}`} onClick={onClick}>{Icon&&<Icon size={17}/>} {children}</button>}
 function Range({label,value=0,min=0,max=100,step=1,suffix='px',onChange}){return <label className="studio-v2-range"><span>{label}<b>{value}{suffix}</b></span><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(Number(e.target.value))}/></label>}
 function Field({label,children,hint}){return <label className="studio-v2-field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>}
@@ -35,7 +40,7 @@ function AccentButton({onClick,children,secondary=false,disabled=false}){return 
 function Color({label,value,onChange}){const hex=/^#[0-9a-f]{6}$/i.test(value||'')?value:'#08294b';return <Field label={label}><div className="studio-v2-color"><input type="color" aria-label={label+' picker'} value={hex} onChange={e=>onChange(e.target.value)}/><input spellCheck={false} value={value??''} onChange={e=>onChange(e.target.value)} /></div></Field>}
 function downloadJSON(data){const blob=new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'});const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download='site-content.json';document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 async function imageToDataUrl(file){
-  if(!file.type.startsWith('image/'))throw new Error('Pilih fail gambar JPG, PNG atau WebP.')
+  if(!['image/png','image/jpeg','image/webp','image/svg+xml'].includes(file.type))throw new Error('Pilih JPG, PNG, WebP atau SVG.')
   if(file.size>18*1024*1024)throw new Error('Saiz fail melebihi 18 MB.')
   const raw=await new Promise((res,rej)=>{const reader=new FileReader;reader.onload=()=>res(reader.result);reader.onerror=()=>rej(Error('Gagal baca gambar.'));reader.readAsDataURL(file)})
   const picture=await new Promise((res,rej)=>{const img=new window.Image;img.onload=()=>res(img);img.onerror=()=>rej(Error('Format gambar tak disokong.'));img.src=raw})
@@ -61,7 +66,7 @@ function useEditorHistory(published,loaded){
 export default function Editor({published,loaded}){
   const {timeline,commit,undo,redo,replace,reset}=useEditorHistory(published,loaded),data=timeline.present
   const [selection,setSelection]=useState({path:'hero.title',kind:'text'}),[tab,setTab]=useState('properties'),[viewport,setViewport]=useState('desktop'),[expanded,setExpanded]=useState(['hero']),[showPublish,setShowPublish]=useState(false),[isPreview,setIsPreview]=useState(false),[showSidebar,setShowSidebar]=useState(false),[mobilePanel,setMobilePanel]=useState(false),[status,setStatus]=useState('Ready'),[search,setSearch]=useState('')
-  const iframe=useRef(null),assetUploadRef=useRef(null),photoRef=useRef(null),importRef=useRef(null),draggedSection=useRef(null)
+  const iframe=useRef(null),assetUploadRef=useRef(null),photoRef=useRef(null),iconRef=useRef(null),importRef=useRef(null),draggedSection=useRef(null)
   const selectedValue=readPath(data,selection.path)
   const lightButton=['heroExplore','treatmentView','solutionsView','appointmentBook','newsView','footerBook'].includes(selection.path.split('.').at(-1))
   const selectionSection=getSection(selection.path)
@@ -91,7 +96,7 @@ export default function Editor({published,loaded}){
     const suffix=selection.path.slice((cardRoot+'.'+index+'.').length);select(`${cardRoot}.${newIndex}.${suffix}`,selection.kind,false)
   }
   const addCard=root=>{const arr=readPath(data,root);if(!Array.isArray(arr)||arr.length>=12){notify('Had 12 cards setiap section.');return}const newCard={...structuredClone(arr.at(-1)||{title:'New card',desc:'Add description',image:''}),title:'New card',desc:'Edit this description'};patch(root,[...arr,newCard]);const path=`${root}.${arr.length}.title`;select(path,'text',false)}
-  const createLibrary=async(files,assign=false)=>{try{const incoming=Array.from(files||[]).slice(0,10);if(!incoming.length)return;notify('Compressing images...');const assets=[];for(const file of incoming){assets.push({id:'media-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:file.name,url:await imageToDataUrl(file)})}commit(d=>{const copy=structuredClone(d);copy.library=[...copy.library,...assets].slice(-80);if(assign&&selection.kind==='image')return setPath(copy,selection.path,assets[0].url);return copy});notify(`${assets.length} gambar ditambah ke media library. Export JSON untuk publish.`)}catch(e){notify(e.message)}finally{if(assetUploadRef.current)assetUploadRef.current.value='';if(photoRef.current)photoRef.current.value=''}}
+  const createLibrary=async(files,assign=false)=>{try{const incoming=Array.from(files||[]).slice(0,10);if(!incoming.length)return;notify('Compressing images...');const assets=[];for(const file of incoming){assets.push({id:'media-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:file.name,url:await imageToDataUrl(file)})}commit(d=>{const copy=structuredClone(d);copy.library=[...copy.library,...assets].slice(-80);if(assign&&['image','logo','icon'].includes(selection.kind))return setPath(copy,selection.path,assets[0].url);return copy});notify(`${assets.length} gambar ditambah ke media library. Export JSON untuk publish.`)}catch(e){notify(e.message)}finally{if(assetUploadRef.current)assetUploadRef.current.value='';if(photoRef.current)photoRef.current.value='';if(iconRef.current)iconRef.current.value=''}}
   const removeAsset=id=>commit(d=>({...d,library:d.library.filter(a=>a.id!==id)}))
   const importJSON=async file=>{if(!file)return;try{const parsed=JSON.parse(await file.text());if(!parsed||typeof parsed!=='object'||!parsed.hero||!parsed.buttons)throw Error('Fail bukan site-content.json.');replace(deepMerge(initialContent,parsed));notify('JSON berjaya import. Review sebelum publish.')}catch(e){notify('Import gagal: '+e.message)}finally{if(importRef.current)importRef.current.value=''}}
   const saveDraft=()=>{try{localStorage.setItem(DRAFT_KEY,JSON.stringify(data));notify('Draft berjaya disimpan pada browser ini.')}catch{notify('Storage penuh. Download JSON sekarang sebagai backup.')}}
@@ -104,6 +109,33 @@ export default function Editor({published,loaded}){
   const mediaUpdate=(name,value)=>patch(`mediaSettings.${selection.path}.${name}`,value)
   const resetSelectedStyle=()=>commit(d=>{const next=structuredClone(d);delete next.elementStyles[selection.path];return next})
   const resetSelectedMedia=()=>commit(d=>{const next=structuredClone(d);delete next.mediaSettings[selection.path];return next})
+  const overlay=data.hero.overlay||initialContent.hero.overlay
+  const patchOverlay=(key,value)=>patch('hero.overlay.'+key,value)
+  const setStop=(index,key,value)=>{
+    const stops=structuredClone(overlay.stops)
+    stops[index]={...stops[index],[key]:value}
+    patchOverlay('stops',stops)
+  }
+  const gradientControls=()=> <>
+    <div className="studio-v2-separator"/><h3>Hero gradient overlay</h3>
+    <label className="studio-v2-check"><input type="checkbox" checked={overlay.enabled} onChange={e=>patchOverlay('enabled',e.target.checked)}/> Enable gradient</label>
+    <Field label="Gradient type"><select value={overlay.type} onChange={e=>patchOverlay('type',e.target.value)}><option value="linear">Linear</option><option value="radial">Radial</option></select></Field>
+    {overlay.type==='linear'?<Range label="Angle" value={overlay.angle??90} min={0} max={360} suffix="°" onChange={v=>patchOverlay('angle',v)}/>:<>
+      <Range label="Radial centre X" value={overlay.radialX??25} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialX',v)}/>
+      <Range label="Radial centre Y" value={overlay.radialY??50} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialY',v)}/>
+    </>}
+    <div className="studio-v2-gradient-preview" style={{backgroundImage:gradientBackground(overlay)+'linear-gradient(130deg,#afcbe6,#315d8b)'}}/>
+
+    <h3>Colour stops</h3>
+    {(overlay.stops||[]).map((stop,i)=><div className="studio-v2-gradientstop" key={i}>
+      <div className="studio-v2-stophead"><b>Stop {i+1}</b><button type="button" disabled={overlay.stops.length<=2} onClick={()=>patchOverlay('stops',overlay.stops.filter((_,j)=>j!==i))} title="Remove stop"><Trash2 size={14}/></button></div>
+      <Color label="Colour" value={stop.color} onChange={v=>setStop(i,'color',v)}/>
+      <Range label="Position" suffix="%" value={stop.position} min={0} max={100} onChange={v=>setStop(i,'position',v)}/>
+      <Range label="Opacity" suffix="%" value={stop.opacity} min={0} max={100} onChange={v=>setStop(i,'opacity',v)}/>
+    </div>)}
+    <AccentButton secondary disabled={overlay.stops.length>=8} onClick={()=>patchOverlay('stops',[...overlay.stops,{color:'#ffffff',opacity:0,position:100}])}><Plus size={14}/> Add gradient stop</AccentButton>
+    <AccentButton secondary onClick={()=>patch('hero.overlay',structuredClone(initialContent.hero.overlay))}><RotateCcw size={14}/> Restore original hero gradient</AccentButton>
+  </>
 
   return <div className="studio-v2">
     <header className="studio-v2-top">
@@ -143,7 +175,10 @@ export default function Editor({published,loaded}){
               </div>}
             </div>
           })}
-          <div className="studio-v2-buttons-group"><b>Global components</b>{['headerBook','footerBook'].map(id=><button key={id} className={'studio-v2-layer '+(selection.path===`buttons.${id}`?'studio-v2-layer-selected':'')} onClick={()=>select(`buttons.${id}`,'button')}><MousePointer2 size={14}/> {id==='headerBook'?'Header button':'Footer button'}</button>)}</div>
+          <div className="studio-v2-buttons-group"><b>Global components</b>
+            {[['branding.headerLogo','Header logo','logo'],['branding.footerLogo','Footer logo','logo'],['icons.headerSearch','Search icon','icon'],['icons.headerMenu','Mobile menu icon','icon'],['icons.buttonArrow','All button arrows','icon'],['icons.cardArrow','Card arrows','icon'],['icons.submitArrow','Submit arrow','icon'],['icons.social.facebook','Facebook icon','icon'],['icons.social.instagram','Instagram icon','icon'],['icons.social.youtube','YouTube icon','icon']].map(([path,label,kind])=><button key={path} className={'studio-v2-layer '+(selection.path===path?'studio-v2-layer-selected':'')} onClick={()=>select(path,kind)}>{controlIcon(kind)} {label}</button>)}
+            {['headerBook','footerBook'].map(id=><button key={id} className={'studio-v2-layer '+(selection.path===`buttons.${id}`?'studio-v2-layer-selected':'')} onClick={()=>select(`buttons.${id}`,'button')}><MousePointer2 size={14}/> {id==='headerBook'?'Header button':'Footer button'}</button>)}
+          </div>
         </div>
         <div className="studio-v2-sidefoot"><Info size={14}/> Drag sections to reorder. Lock to prevent accidental editing.</div>
       </aside>
@@ -162,7 +197,7 @@ export default function Editor({published,loaded}){
         <div className="studio-v2-inspecttabs"><button className={tab==='properties'?'active':''} onClick={()=>setTab('properties')}><Settings2 size={15}/> Properties</button><button className={tab==='media'?'active':''} onClick={()=>setTab('media')}><ImageIcon size={15}/> Media</button><button className={tab==='section'?'active':''} onClick={()=>setTab('section')}><LayoutGrid size={15}/> Section</button><button className={tab==='theme'?'active':''} onClick={()=>setTab('theme')}><Palette size={15}/> Theme</button></div>
         <div className="studio-v2-inspectscroll">
           {tab==='properties'&&<>
-            <div className="studio-v2-paneltitle"><span>{controlIcon(selection.kind)}</span><div><b>{selection.kind==='image'?'Image':selection.kind==='button'?'Button':'Text'} properties</b><small>{selection.path}</small></div></div>
+            <div className="studio-v2-paneltitle"><span>{controlIcon(selection.kind)}</span><div><b>{selection.kind==='image'?'Image':selection.kind==='logo'?'Logo':selection.kind==='icon'?'Icon':selection.kind==='gradient'?'Gradient':selection.kind==='button'?'Button':'Text'} properties</b><small>{selection.path}</small></div></div>
             {locked?<div className="studio-v2-warning"><Lock size={17}/> This section is locked. Unlock in Layers first.</div>:<>
               {selection.kind==='text'&&<>
                 <Field label="Content"><textarea rows={selection.path.endsWith('body')||selection.path.endsWith('desc')?6:3} value={selectedValue??''} onChange={e=>patch(selection.path,e.target.value)}/></Field>
@@ -187,7 +222,29 @@ export default function Editor({published,loaded}){
                 <Field label="Image fit"><select value={imageMeta.fit||'cover'} onChange={e=>mediaUpdate('fit',e.target.value)}><option value="cover">Cover (fill area)</option><option value="contain">Contain (show all)</option></select></Field>
                 {!['hero.image','appointment.image'].includes(selection.path)&&<Field label="Image height (px, blank = default)"><input type="number" min="80" max="800" placeholder="Default" value={imageMeta.height??''} onChange={e=>mediaUpdate('height',e.target.value?Math.max(80,Math.min(800,Number(e.target.value))):'')}/></Field>}
                 <AccentButton secondary onClick={()=>{patch(selection.path,readPath(initialContent,selection.path)||'');resetSelectedMedia()}}><RotateCcw size={15}/> Restore original image</AccentButton>
+                {selection.path==='hero.image'&&gradientControls()}
               </>}
+              {selection.kind==='gradient'&&gradientControls()}
+              {selection.kind==='logo'&&<>
+                <p className="studio-v2-muted">Choose a logo for this location. Header and footer can use different versions.</p>
+                {selectedValue?<div className="studio-v2-logo-preview"><img src={selectedValue} alt="Selected OPTIMAX logo"/></div>:<div className="studio-v2-empty">Original V2 text logo is active.</div>}
+                <Field label="Image URL"><input value={selectedValue?.startsWith('data:')?'':selectedValue||''} onChange={e=>patch(selection.path,e.target.value)} placeholder="https://... or image path"/></Field>
+                <AccentButton onClick={()=>photoRef.current?.click()}><Upload size={15}/> Upload / Replace Logo</AccentButton>
+                <input hidden ref={photoRef} type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" onChange={e=>createLibrary(e.target.files,true)}/>
+                <AccentButton secondary onClick={()=>setTab('media')}><ImageIcon size={15}/> Choose from Media Library</AccentButton>
+                <Range label="Logo width" min={65} max={360} value={data.branding[selection.path==='branding.footerLogo'?'footerWidth':'headerWidth']} onChange={v=>patch(`branding.${selection.path==='branding.footerLogo'?'footerWidth':'headerWidth'}`,v)}/>
+                <AccentButton secondary onClick={()=>patch(selection.path,'')}><RotateCcw size={15}/> Restore original text logo</AccentButton>
+              </>}
+              {selection.kind==='icon'&&<>
+                <p className="studio-v2-muted">Choose a Lucide icon or upload your own PNG, WebP or SVG (converted to WebP).</p>
+                <div className="studio-v2-icon-preview"><IconVisual value={selectedValue} size={42}/></div>
+                <Field label="Icon library"><select value={typeof selectedValue==='string'&&selectedValue.startsWith('data:')?'':selectedValue||''} onChange={e=>patch(selection.path,e.target.value)}><option value="">Select an icon</option>{iconNames.map(name=><option key={name} value={name}>{name}</option>)}</select></Field>
+                <div className="studio-v2-icon-grid">{iconNames.map(name=><button type="button" title={name} aria-label={name} key={name} className={selectedValue===name?'active':''} onClick={()=>patch(selection.path,name)}><IconVisual value={name} size={20}/></button>)}</div>
+                <AccentButton secondary onClick={()=>iconRef.current?.click()}><Upload size={15}/> Upload custom icon</AccentButton>
+                <input hidden ref={iconRef} type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" onChange={e=>createLibrary(e.target.files,true)}/>
+                <AccentButton secondary onClick={()=>patch(selection.path,readPath(initialContent,selection.path))}><RotateCcw size={15}/> Restore original icon</AccentButton>
+              </>}
+              
               {selection.kind==='button'&&<>
                 <Field label="Button label"><input value={selectedValue?.label||''} onChange={e=>patch(selection.path+'.label',e.target.value)}/></Field>
                 <Field label="Link / anchor"><input value={selectedValue?.href||''} onChange={e=>patch(selection.path+'.href',e.target.value)}/></Field>
@@ -204,9 +261,9 @@ export default function Editor({published,loaded}){
               {cardRoot&&<><div className="studio-v2-separator"/><h3>Card actions</h3><div className="studio-v2-cardactions"><ToolButton icon={ArrowUp} title="Move card up" disabled={cardIndex===0} onClick={()=>cardOperation('up')}/><ToolButton icon={ArrowDown} title="Move card down" disabled={cardIndex===readPath(data,cardRoot).length-1} onClick={()=>cardOperation('down')}/><ToolButton icon={Copy} title="Duplicate card" onClick={()=>cardOperation('duplicate')}/><ToolButton icon={Trash2} title="Delete card" onClick={()=>cardOperation('delete')}/></div></>}
             </>}
           </>}
-          {tab==='media'&&<><div className="studio-v2-paneltitle"><span><ImageIcon size={17}/></span><div><b>Media Library</b><small>{library.length} images · local draft</small></div></div><p className="studio-v2-muted">Upload images here, then select an image element in Layers to apply an asset. Your exported JSON includes these images.</p>
-            <AccentButton onClick={()=>assetUploadRef.current?.click()}><Plus size={15}/> Add images</AccentButton><input hidden type="file" accept="image/png,image/jpeg,image/webp" multiple ref={assetUploadRef} onChange={e=>createLibrary(e.target.files,false)}/>
-            <div className="studio-v2-gallery">{library.map(item=><div className="studio-v2-asset" key={item.id}><img src={item.url} alt={item.name}/><div><small title={item.name}>{item.name}</small><button title="Remove from library" onClick={()=>removeAsset(item.id)}><Trash2 size={13}/></button></div><button disabled={selection.kind!=='image'||locked} onClick={()=>{patch(selection.path,item.url);setTab('properties')}}>Use this image</button></div>)}</div>
+          {tab==='media'&&<><div className="studio-v2-paneltitle"><span><ImageIcon size={17}/></span><div><b>Media Library</b><small>{library.length} images · local draft</small></div></div><p className="studio-v2-muted">Upload photos, logos or icons, then select an image, logo or icon element in Layers. Your exported JSON includes these assets.</p>
+            <AccentButton onClick={()=>assetUploadRef.current?.click()}><Plus size={15}/> Add images</AccentButton><input hidden type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" multiple ref={assetUploadRef} onChange={e=>createLibrary(e.target.files,false)}/>
+            <div className="studio-v2-gallery">{library.map(item=><div className="studio-v2-asset" key={item.id}><img src={item.url} alt={item.name}/><div><small title={item.name}>{item.name}</small><button title="Remove from library" onClick={()=>removeAsset(item.id)}><Trash2 size={13}/></button></div><button disabled={!['image','logo','icon'].includes(selection.kind)||locked} onClick={()=>{patch(selection.path,item.url);setTab('properties')}}>Use this image</button></div>)}</div>
             {!library.length&&<div className="studio-v2-empty"><ImageIcon size={27}/><p>No uploaded media yet.</p></div>}
             <div className="studio-v2-warning"><Info size={15}/> Images are compressed and stored inside the export JSON. A lot of large photos will increase file size and browser storage usage.</div>
           </>}

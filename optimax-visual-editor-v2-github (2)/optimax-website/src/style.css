@@ -31,3 +31,14 @@
 .public-site .site-sections{display:flex;flex-direction:column}
 .public-site .site-sections > *{width:100%;flex-shrink:0}
 @media(max-width:760px){.public-site .section{padding-block:var(--mobile-section-padding)}}
+
+/* V2 additive controls: logo and selectable icons, preserving all original layout rules. */
+.public-site .brand-logo-image{display:block;max-height:62px;object-fit:contain;object-position:left center}
+.public-site .editable-icon{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;line-height:0;flex-shrink:0}
+.public-site .editable-icon>img{display:block;flex-shrink:0}
+.public-site .feature>.editable-icon{color:#315e8b}
+.public-site .benefit>.editable-icon{color:inherit}
+.public-site .editable-icon svg{display:block}
+.public-site .socials .editable-icon svg{width:16px;height:16px}
+.public-site .socials .editable-icon img{width:16px;height:16px}
+.public-site [data-edit-path].editable-icon.edit-selected{outline:2px solid #277bd2;outline-offset:5px;border-radius:3px}
