@@ -29,11 +29,11 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        working-directory: ./optimax-website
+        working-directory: "./optimax-visual-editor-v2-github (2)/optimax-website"
         run: npm install
 
       - name: Build website
-        working-directory: ./optimax-website
+        working-directory: "./optimax-visual-editor-v2-github (2)/optimax-website"
         run: npm run build -- --base=/Optimax/
 
       - name: Configure GitHub Pages
@@ -42,7 +42,7 @@ jobs:
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./optimax-website/dist
+          path: "./optimax-visual-editor-v2-github (2)/optimax-website/dist"
 
       - name: Deploy website
         uses: actions/deploy-pages@v4
