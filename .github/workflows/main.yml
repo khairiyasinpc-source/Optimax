@@ -36,6 +36,11 @@ jobs:
         working-directory: "./optimax-visual-editor-v2-github (2)/optimax-website"
         run: npm run build -- --base=/Optimax/
 
+      - name: Include colourful homepage preview
+        run: |
+          mkdir -p "./optimax-visual-editor-v2-github (2)/optimax-website/dist/colourful-homepage"
+          cp -R colourful-homepage/. "./optimax-visual-editor-v2-github (2)/optimax-website/dist/colourful-homepage/"
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
